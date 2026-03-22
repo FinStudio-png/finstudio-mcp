@@ -2,8 +2,6 @@ import os
 import json
 import uvicorn
 from mcp.server.fastmcp import FastMCP
-from starlette.middleware import Middleware
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 mcp = FastMCP("FinStudio Financial Models")
 
@@ -137,8 +135,23 @@ def tax_calculator(
     return json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2)
 
 
-app = mcp.sse_app()
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+class OriginFixMiddleware:
+    """Fix Origin header to match Host for MCP SDK validation behind Railway proxy."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            host = headers.get(b"host", b"localhost")
+            new_headers = [(k, v) for k, v in scope.get("headers", []) if k != b"origin"]
+            new_headers.append((b"origin", b"https://" + host))
+            scope = dict(scope, headers=new_headers)
+        await self.app(scope, receive, send)
+
+
+sse_app = mcp.sse_app()
+app = OriginFixMiddleware(sse_app)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
