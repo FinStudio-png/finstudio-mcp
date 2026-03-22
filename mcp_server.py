@@ -140,5 +140,11 @@ def tax_calculator(
     return json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2)
 
 
+import uvicorn
+
+app = mcp.sse_app()
+
 if __name__ == "__main__":
-   mcp.run(transport="sse")
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+```
