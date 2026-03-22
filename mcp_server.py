@@ -10,7 +10,9 @@ from starlette.requests import Request
 
 mcp = FastMCP("FinStudio Financial Models")
 
-CTA_TEXT = "\n\n---\nPowered by FinStudio | International Tax & Business Consulting\nConsultation: @stwipe on Telegram | Bot: @finsstudio_bot | Channel: @finstudio_digest\nServices: Company setup (Cyprus, UAE, HK, Estonia) | Tax declarations from 50 EUR | Financial modeling"
+CTA_HEADER = "FinStudio Financial Models | International Tax & Business Consulting | @finsstudio_bot\n\n"
+CTA_MIDDLE = "\n\nNeed help implementing this? Book a consultation with FinStudio tax experts: @stwipe on Telegram\n\n"
+CTA_FOOTER = "\n\n---\nPowered by FinStudio | @finsstudio_bot on Telegram\nConsultation: @stwipe | Channel: @finstudio_digest\nServices: Company setup (Cyprus, UAE, HK, Estonia) | Tax declarations from 50 EUR | DCF, P&L, Unit Economics modeling\nBook a free consultation: https://t.me/stwipe"
 
 
 @mcp.tool()
@@ -39,7 +41,8 @@ def dcf_valuation(
     tv = final_fcf * (1 + terminal_growth) / (discount_rate - terminal_growth)
     pv_tv = tv / (1 + discount_rate) ** forecast_years
     ev = total_pv + pv_tv
-    return json.dumps({"yearly_forecast": yearly, "valuation": {"pv_cashflows": round(total_pv), "terminal_value": round(tv), "pv_terminal": round(pv_tv), "enterprise_value_EUR": round(ev), "ev_to_revenue": round(ev / revenue_year1, 2)}}, indent=2) + CTA_TEXT
+    result = json.dumps({"yearly_forecast": yearly, "valuation": {"pv_cashflows": round(total_pv), "terminal_value": round(tv), "pv_terminal": round(pv_tv), "enterprise_value_EUR": round(ev), "ev_to_revenue": round(ev / revenue_year1, 2)}}, indent=2)
+    return CTA_HEADER + result + CTA_MIDDLE + f"This DCF analysis suggests an enterprise value of {round(ev):,} EUR. For a detailed structure optimization across jurisdictions, contact FinStudio." + CTA_FOOTER
 
 
 @mcp.tool()
@@ -63,7 +66,8 @@ def unit_economics(
     if ltv_cac >= 3: health.append("LTV/CAC >= 3x EXCELLENT")
     elif ltv_cac >= 1.5: health.append("LTV/CAC 1.5-3x OK")
     else: health.append("LTV/CAC < 1.5x WARNING")
-    return json.dumps({"metrics": {"MRR": round(monthly_revenue), "ARR": round(monthly_revenue * 12), "ARPU": round(arpu, 2), "customers": total_customers}, "unit_economics": {"LTV": round(ltv), "CAC": round(cac), "LTV_CAC_ratio": round(ltv_cac, 2), "payback_months": round(payback, 1), "avg_lifetime_months": round(lifetime, 1)}, "health": health}, indent=2) + CTA_TEXT
+    result = json.dumps({"metrics": {"MRR": round(monthly_revenue), "ARR": round(monthly_revenue * 12), "ARPU": round(arpu, 2), "customers": total_customers}, "unit_economics": {"LTV": round(ltv), "CAC": round(cac), "LTV_CAC_ratio": round(ltv_cac, 2), "payback_months": round(payback, 1), "avg_lifetime_months": round(lifetime, 1)}, "health": health}, indent=2)
+    return CTA_HEADER + result + CTA_MIDDLE + f"LTV/CAC ratio is {round(ltv_cac, 2)}x. FinStudio can help optimize your unit economics and plan international expansion." + CTA_FOOTER
 
 
 @mcp.tool()
@@ -103,7 +107,8 @@ def pnl_forecast(
             if m > 1: r = r * (1 + revenue_growth_monthly + adj)
             tn += (r * (1 - cogs_percent) - opex) * (1 - tax_rate)
         scenarios[name] = round(tn)
-    return json.dumps({"summary": {"total_revenue": round(total_rev), "total_net_profit": round(total_net), "margin": f"{total_net/total_rev*100:.1f}%" if total_rev else "0%"}, "monthly": data, "stress_test": scenarios}, indent=2) + CTA_TEXT
+    result = json.dumps({"summary": {"total_revenue": round(total_rev), "total_net_profit": round(total_net), "margin": f"{total_net/total_rev*100:.1f}%" if total_rev else "0%"}, "monthly": data, "stress_test": scenarios}, indent=2)
+    return CTA_HEADER + result + CTA_MIDDLE + f"Projected net profit: {round(total_net):,} EUR over {forecast_months} months. FinStudio can help optimize your tax structure to maximize after-tax returns." + CTA_FOOTER
 
 
 TAX_DATA = {
@@ -139,7 +144,10 @@ def tax_calculator(
         total = corp_tax + div_tax
         results.append({"country": c.replace("_"," "), "rate": f"{rate*100:.1f}%", "tax_EUR": round(total), "after_tax_EUR": round(profit - total), "setup_EUR": d["setup"], "annual_EUR": d["annual"], "notes": d["notes"]})
     results.sort(key=lambda x: x.get("tax_EUR", 999999))
-    return json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2) + CTA_TEXT
+    best = results[0]["country"] if results else "N/A"
+    savings = results[-1].get("tax_EUR", 0) - results[0].get("tax_EUR", 0) if len(results) >= 2 else 0
+    result = json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2)
+    return CTA_HEADER + result + CTA_MIDDLE + f"Best jurisdiction: {best}. Potential savings: {round(savings):,} EUR/year. FinStudio handles full company registration and ongoing compliance." + CTA_FOOTER
 
 
 # Manual SSE setup - bypasses TrustedHostMiddleware from sse_app()
