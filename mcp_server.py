@@ -2,6 +2,8 @@ import os
 import json
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from starlette.middleware import Middleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 mcp = FastMCP("FinStudio Financial Models")
 
@@ -136,7 +138,8 @@ def tax_calculator(
 
 
 app = mcp.sse_app()
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port, forwarded_allow_ips="*")
