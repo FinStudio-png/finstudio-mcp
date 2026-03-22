@@ -1,11 +1,6 @@
-"""
-FinStudio MCP Server — Financial Models
-=========================================
-4 tools: dcf_valuation, unit_economics, pnl_forecast, tax_calculator
-"""
-
 import os
 import json
+import uvicorn
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("FinStudio Financial Models")
@@ -20,7 +15,7 @@ def dcf_valuation(
     terminal_growth: float = 0.03,
     forecast_years: int = 5
 ) -> str:
-    """DCF valuation of a business. Args: revenue_year1=annual revenue EUR, growth_rate=0.15 for 15%, profit_margin=0.20, discount_rate=0.12, terminal_growth=0.03, forecast_years=5."""
+    """DCF valuation of a business. revenue_year1=annual revenue EUR, growth_rate=0.15 for 15%, profit_margin=0.20, discount_rate=0.12, terminal_growth=0.03, forecast_years=5."""
     if discount_rate <= terminal_growth:
         return json.dumps({"error": "Discount rate must exceed terminal growth rate"})
     total_pv = 0
@@ -50,7 +45,7 @@ def unit_economics(
     gross_margin: float = 0.70,
     monthly_marketing_spend: float = 0
 ) -> str:
-    """Unit economics calculator. Args: monthly_revenue=MRR in EUR, total_customers, new_customers_per_month, monthly_churn_rate=0.05, customer_acquisition_cost=0, gross_margin=0.70, monthly_marketing_spend=0."""
+    """Unit economics: LTV, CAC, MRR, payback. monthly_revenue=MRR EUR, total_customers, new_customers_per_month, monthly_churn_rate=0.05, customer_acquisition_cost=0, gross_margin=0.70, monthly_marketing_spend=0."""
     arpu = monthly_revenue / total_customers if total_customers > 0 else 0
     cac = customer_acquisition_cost if customer_acquisition_cost > 0 else (monthly_marketing_spend / new_customers_per_month if new_customers_per_month > 0 and monthly_marketing_spend > 0 else 0)
     lifetime = 1 / monthly_churn_rate if monthly_churn_rate > 0 else 60
@@ -58,9 +53,9 @@ def unit_economics(
     ltv_cac = ltv / cac if cac > 0 else 0
     payback = cac / (arpu * gross_margin) if arpu * gross_margin > 0 else 0
     health = []
-    if ltv_cac >= 3: health.append("LTV/CAC >= 3x — EXCELLENT")
-    elif ltv_cac >= 1.5: health.append("LTV/CAC 1.5-3x — OK")
-    else: health.append("LTV/CAC < 1.5x — WARNING")
+    if ltv_cac >= 3: health.append("LTV/CAC >= 3x EXCELLENT")
+    elif ltv_cac >= 1.5: health.append("LTV/CAC 1.5-3x OK")
+    else: health.append("LTV/CAC < 1.5x WARNING")
     return json.dumps({"metrics": {"MRR": round(monthly_revenue), "ARR": round(monthly_revenue * 12), "ARPU": round(arpu, 2), "customers": total_customers}, "unit_economics": {"LTV": round(ltv), "CAC": round(cac), "LTV_CAC_ratio": round(ltv_cac, 2), "payback_months": round(payback, 1), "avg_lifetime_months": round(lifetime, 1)}, "health": health}, indent=2)
 
 
@@ -76,7 +71,7 @@ def pnl_forecast(
     tax_rate: float = 0.125,
     forecast_months: int = 12
 ) -> str:
-    """P&L forecast. Args: monthly_revenue=starting MRR EUR, revenue_growth_monthly=0.05, cogs_percent=0.30, salaries/rent/marketing/other_opex=monthly EUR, tax_rate=0.125 Cyprus, forecast_months=12."""
+    """P&L forecast 12 months. monthly_revenue=starting MRR EUR, revenue_growth_monthly=0.05, cogs_percent=0.30, salaries/rent/marketing/other_opex monthly EUR, tax_rate=0.125, forecast_months=12."""
     data = []
     total_rev = 0
     total_net = 0
@@ -123,7 +118,7 @@ def tax_calculator(
     distribute_profits: bool = False,
     has_ip: bool = False
 ) -> str:
-    """Compare taxes across jurisdictions. Args: annual_revenue EUR, profit_margin=0.30, jurisdictions='Cyprus,UAE,Estonia,Hong_Kong' (also: Spain,Portugal,Malta,Ireland), distribute_profits=false, has_ip=false."""
+    """Compare taxes across jurisdictions. annual_revenue EUR, profit_margin=0.30, jurisdictions='Cyprus,UAE,Estonia,Hong_Kong' (also Spain,Portugal,Malta,Ireland), distribute_profits=false, has_ip=false."""
     profit = annual_revenue * profit_margin
     results = []
     for c in [j.strip() for j in jurisdictions.split(",")]:
@@ -140,11 +135,8 @@ def tax_calculator(
     return json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2)
 
 
-import uvicorn
-
 app = mcp.sse_app()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
-```
