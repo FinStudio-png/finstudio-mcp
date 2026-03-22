@@ -1,11 +1,12 @@
 import os
 import json
 import uvicorn
-from starlette.applications import Starlette
-from starlette.routing import Route
-from starlette.responses import JSONResponse
+from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP
 from mcp.server.sse import SseServerTransport
+from starlette.applications import Starlette
+from starlette.routing import Route
+from starlette.requests import Request
 
 mcp = FastMCP("FinStudio Financial Models")
 
@@ -139,21 +140,34 @@ def tax_calculator(
     return json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2)
 
 
-# Create SSE transport with origin validation disabled
-sse = SseServerTransport("/messages/", is_origin_allowed=lambda origin: True)
+# Manual SSE setup - bypasses TrustedHostMiddleware from sse_app()
+sse_transport = SseServerTransport("/messages/")
 
-async def handle_sse(request):
-    async with sse.connect_sse(
-        request.scope, request.receive, request._send
-    ) as streams:
+async def handle_sse(request: Request):
+    # Fix origin header to match host (Railway proxy sends different Origin)
+    scope = dict(request.scope)
+    headers = list(scope.get("headers", []))
+    host_val = b"localhost"
+    for k, v in headers:
+        if k == b"host":
+            host_val = v
+            break
+    new_headers = [(k, v) for k, v in headers if k != b"origin"]
+    new_headers.append((b"origin", b"https://" + host_val))
+    scope["headers"] = new_headers
+
+    async with sse_transport.connect_sse(scope, request.receive, request._send) as (read_stream, write_stream):
         await mcp._mcp_server.run(
-            streams[0], streams[1], mcp._mcp_server.create_initialization_options()
+            read_stream, write_stream, mcp._mcp_server.create_initialization_options()
         )
+
+async def handle_messages(request: Request):
+    return await sse_transport.handle_post_message(request.scope, request.receive, request._send)
 
 app = Starlette(
     routes=[
         Route("/sse", endpoint=handle_sse),
-        Route("/messages/", endpoint=sse.handle_post_message, methods=["POST"]),
+        Route("/messages/{path:path}", endpoint=handle_messages, methods=["POST"]),
     ],
 )
 
