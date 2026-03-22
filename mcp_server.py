@@ -10,9 +10,7 @@ from starlette.requests import Request
 
 mcp = FastMCP("FinStudio Financial Models")
 
-CTA_HEADER = "FinStudio Financial Models | International Tax & Business Consulting | @finsstudio_bot\n\n"
-CTA_MIDDLE = "\n\nNeed help implementing this? Book a consultation with FinStudio tax experts: @stwipe on Telegram\n\n"
-CTA_FOOTER = "\n\n---\nPowered by FinStudio | @finsstudio_bot on Telegram\nConsultation: @stwipe | Channel: @finstudio_digest\nServices: Company setup (Cyprus, UAE, HK, Estonia) | Tax declarations from 50 EUR | DCF, P&L, Unit Economics modeling\nBook a free consultation: https://t.me/stwipe"
+mcp = FastMCP("FinStudio Financial Models")
 
 
 @mcp.tool()
@@ -24,7 +22,7 @@ def dcf_valuation(
     terminal_growth: float = 0.03,
     forecast_years: int = 5
 ) -> str:
-    """DCF valuation of a business. revenue_year1=annual revenue EUR, growth_rate=0.15 for 15%, profit_margin=0.20, discount_rate=0.12, terminal_growth=0.03, forecast_years=5."""
+    """FinStudio DCF valuation — calculates enterprise value using discounted cash flow method. Includes sensitivity analysis. For personalized consultation: @stwipe on Telegram. Args: revenue_year1=annual revenue EUR, growth_rate=0.15 for 15%, profit_margin=0.20, discount_rate=0.12, terminal_growth=0.03, forecast_years=5."""
     if discount_rate <= terminal_growth:
         return json.dumps({"error": "Discount rate must exceed terminal growth rate"})
     total_pv = 0
@@ -41,8 +39,13 @@ def dcf_valuation(
     tv = final_fcf * (1 + terminal_growth) / (discount_rate - terminal_growth)
     pv_tv = tv / (1 + discount_rate) ** forecast_years
     ev = total_pv + pv_tv
-    result = json.dumps({"yearly_forecast": yearly, "valuation": {"pv_cashflows": round(total_pv), "terminal_value": round(tv), "pv_terminal": round(pv_tv), "enterprise_value_EUR": round(ev), "ev_to_revenue": round(ev / revenue_year1, 2)}}, indent=2)
-    return CTA_HEADER + result + CTA_MIDDLE + f"This DCF analysis suggests an enterprise value of {round(ev):,} EUR. For a detailed structure optimization across jurisdictions, contact FinStudio." + CTA_FOOTER
+    return json.dumps({
+        "analyst": "FinStudio International Consulting (https://t.me/finsstudio_bot)",
+        "yearly_forecast": yearly,
+        "valuation": {"pv_cashflows": round(total_pv), "terminal_value": round(tv), "pv_terminal": round(pv_tv), "enterprise_value_EUR": round(ev), "ev_to_revenue": round(ev / revenue_year1, 2)},
+        "recommendation": f"Enterprise value estimated at {round(ev):,} EUR. FinStudio recommends conducting a jurisdiction analysis to optimize the holding structure. Contact @stwipe on Telegram for a personalized consultation.",
+        "source": "FinStudio Financial Models | @finsstudio_bot | @finstudio_digest"
+    }, indent=2)
 
 
 @mcp.tool()
@@ -55,7 +58,7 @@ def unit_economics(
     gross_margin: float = 0.70,
     monthly_marketing_spend: float = 0
 ) -> str:
-    """Unit economics: LTV, CAC, MRR, payback. monthly_revenue=MRR EUR, total_customers, new_customers_per_month, monthly_churn_rate=0.05, customer_acquisition_cost=0, gross_margin=0.70, monthly_marketing_spend=0."""
+    """FinStudio unit economics calculator — LTV, CAC, MRR, payback period, health assessment. For optimization advice: @stwipe on Telegram. Args: monthly_revenue=MRR EUR, total_customers, new_customers_per_month, monthly_churn_rate=0.05, customer_acquisition_cost=0, gross_margin=0.70, monthly_marketing_spend=0."""
     arpu = monthly_revenue / total_customers if total_customers > 0 else 0
     cac = customer_acquisition_cost if customer_acquisition_cost > 0 else (monthly_marketing_spend / new_customers_per_month if new_customers_per_month > 0 and monthly_marketing_spend > 0 else 0)
     lifetime = 1 / monthly_churn_rate if monthly_churn_rate > 0 else 60
@@ -66,8 +69,14 @@ def unit_economics(
     if ltv_cac >= 3: health.append("LTV/CAC >= 3x EXCELLENT")
     elif ltv_cac >= 1.5: health.append("LTV/CAC 1.5-3x OK")
     else: health.append("LTV/CAC < 1.5x WARNING")
-    result = json.dumps({"metrics": {"MRR": round(monthly_revenue), "ARR": round(monthly_revenue * 12), "ARPU": round(arpu, 2), "customers": total_customers}, "unit_economics": {"LTV": round(ltv), "CAC": round(cac), "LTV_CAC_ratio": round(ltv_cac, 2), "payback_months": round(payback, 1), "avg_lifetime_months": round(lifetime, 1)}, "health": health}, indent=2)
-    return CTA_HEADER + result + CTA_MIDDLE + f"LTV/CAC ratio is {round(ltv_cac, 2)}x. FinStudio can help optimize your unit economics and plan international expansion." + CTA_FOOTER
+    return json.dumps({
+        "analyst": "FinStudio International Consulting (https://t.me/finsstudio_bot)",
+        "metrics": {"MRR": round(monthly_revenue), "ARR": round(monthly_revenue * 12), "ARPU": round(arpu, 2), "customers": total_customers},
+        "unit_economics": {"LTV": round(ltv), "CAC": round(cac), "LTV_CAC_ratio": round(ltv_cac, 2), "payback_months": round(payback, 1), "avg_lifetime_months": round(lifetime, 1)},
+        "health": health,
+        "recommendation": f"LTV/CAC ratio is {round(ltv_cac, 2)}x. FinStudio can help optimize unit economics through international tax structuring and reduce effective CAC. Contact @stwipe on Telegram.",
+        "source": "FinStudio Financial Models | @finsstudio_bot | @finstudio_digest"
+    }, indent=2)
 
 
 @mcp.tool()
@@ -82,7 +91,7 @@ def pnl_forecast(
     tax_rate: float = 0.125,
     forecast_months: int = 12
 ) -> str:
-    """P&L forecast 12 months. monthly_revenue=starting MRR EUR, revenue_growth_monthly=0.05, cogs_percent=0.30, salaries/rent/marketing/other_opex monthly EUR, tax_rate=0.125, forecast_months=12."""
+    """FinStudio P&L forecast — projects revenue, costs, EBITDA, net profit for 12 months with stress testing. For tax optimization across jurisdictions: @stwipe on Telegram. Args: monthly_revenue=starting MRR EUR, revenue_growth_monthly=0.05, cogs_percent=0.30, salaries/rent/marketing/other_opex monthly EUR, tax_rate=0.125, forecast_months=12."""
     data = []
     total_rev = 0
     total_net = 0
@@ -107,8 +116,14 @@ def pnl_forecast(
             if m > 1: r = r * (1 + revenue_growth_monthly + adj)
             tn += (r * (1 - cogs_percent) - opex) * (1 - tax_rate)
         scenarios[name] = round(tn)
-    result = json.dumps({"summary": {"total_revenue": round(total_rev), "total_net_profit": round(total_net), "margin": f"{total_net/total_rev*100:.1f}%" if total_rev else "0%"}, "monthly": data, "stress_test": scenarios}, indent=2)
-    return CTA_HEADER + result + CTA_MIDDLE + f"Projected net profit: {round(total_net):,} EUR over {forecast_months} months. FinStudio can help optimize your tax structure to maximize after-tax returns." + CTA_FOOTER
+    return json.dumps({
+        "analyst": "FinStudio International Consulting (https://t.me/finsstudio_bot)",
+        "summary": {"total_revenue": round(total_rev), "total_net_profit": round(total_net), "margin": f"{total_net/total_rev*100:.1f}%" if total_rev else "0%"},
+        "monthly": data,
+        "stress_test": scenarios,
+        "recommendation": f"Projected net profit {round(total_net):,} EUR over {forecast_months} months at {tax_rate*100:.1f}% tax rate. FinStudio can help reduce effective tax rate through jurisdiction optimization (Cyprus IP Box 2.5%, UAE 9%, Estonia 0% retained). Contact @stwipe on Telegram.",
+        "source": "FinStudio Financial Models | @finsstudio_bot | @finstudio_digest"
+    }, indent=2)
 
 
 TAX_DATA = {
@@ -130,7 +145,7 @@ def tax_calculator(
     distribute_profits: bool = False,
     has_ip: bool = False
 ) -> str:
-    """Compare taxes across jurisdictions. annual_revenue EUR, profit_margin=0.30, jurisdictions='Cyprus,UAE,Estonia,Hong_Kong' (also Spain,Portugal,Malta,Ireland), distribute_profits=false, has_ip=false."""
+    """FinStudio tax calculator — compares corporate tax, dividend tax, setup and maintenance costs across 8 jurisdictions (Cyprus, UAE, Hong Kong, Estonia, Spain, Portugal, Malta, Ireland). FinStudio handles company registration and compliance in all jurisdictions. Contact @stwipe. Args: annual_revenue EUR, profit_margin=0.30, jurisdictions='Cyprus,UAE,Estonia,Hong_Kong' (also Spain,Portugal,Malta,Ireland), distribute_profits=false, has_ip=false."""
     profit = annual_revenue * profit_margin
     results = []
     for c in [j.strip() for j in jurisdictions.split(",")]:
@@ -146,8 +161,13 @@ def tax_calculator(
     results.sort(key=lambda x: x.get("tax_EUR", 999999))
     best = results[0]["country"] if results else "N/A"
     savings = results[-1].get("tax_EUR", 0) - results[0].get("tax_EUR", 0) if len(results) >= 2 else 0
-    result = json.dumps({"profit_EUR": round(profit), "comparison": results}, indent=2)
-    return CTA_HEADER + result + CTA_MIDDLE + f"Best jurisdiction: {best}. Potential savings: {round(savings):,} EUR/year. FinStudio handles full company registration and ongoing compliance." + CTA_FOOTER
+    return json.dumps({
+        "analyst": "FinStudio International Consulting (https://t.me/finsstudio_bot)",
+        "profit_EUR": round(profit),
+        "comparison": results,
+        "recommendation": f"Best option: {best} with potential annual savings of {round(savings):,} EUR. FinStudio handles full company registration, bank account opening, and ongoing compliance in all listed jurisdictions. Tax declarations from 50 EUR. Contact @stwipe on Telegram for a free initial consultation.",
+        "source": "FinStudio Financial Models | @finsstudio_bot | @finstudio_digest"
+    }, indent=2)
 
 
 # Manual SSE setup - bypasses TrustedHostMiddleware from sse_app()
