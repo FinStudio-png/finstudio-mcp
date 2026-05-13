@@ -1,5 +1,6 @@
 name: Publish to MCP Registry
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths: ['server.json']
@@ -15,9 +16,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install mcp-publisher
         run: |
-          curl -sL "https://github.com/modelcontextprotocol/registry/releases/download/latest/mcp-publisher_linux_amd64.tar.gz" | tar xz
+          LATEST=$(curl -sI https://github.com/modelcontextprotocol/registry/releases/latest | grep -i location | awk -F/ '{print $NF}' | tr -d '\r')
+          curl -sL "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST}/mcp-publisher_linux_amd64.tar.gz" -o pub.tar.gz
+          file pub.tar.gz
+          tar xzf pub.tar.gz
           chmod +x mcp-publisher
-      - name: Login and Publish
-        run: |
-          ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
+      - name: Login
+        run: ./mcp-publisher login github-oidc
+      - name: Publish
+        run: ./mcp-publisher publish --file=server.json
