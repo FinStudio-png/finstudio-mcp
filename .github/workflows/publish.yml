@@ -14,14 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install mcp-publisher
+      - name: Install Homebrew and mcp-publisher
         run: |
-          LATEST=$(curl -sI https://github.com/modelcontextprotocol/registry/releases/latest | grep -i location | awk -F/ '{print $NF}' | tr -d '\r')
-          curl -sL "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST}/mcp-publisher_linux_amd64.tar.gz" -o pub.tar.gz
-          file pub.tar.gz
-          tar xzf pub.tar.gz
-          chmod +x mcp-publisher
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install mcp-publisher
+          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
       - name: Login
-        run: ./mcp-publisher login github-oidc
+        run: mcp-publisher login github-oidc
       - name: Publish
-        run: ./mcp-publisher publish --file=server.json
+        run: mcp-publisher publish --file=server.json
