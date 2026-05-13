@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
   "name": "io.github.FinStudio-png/finstudio-financial-models",
-  "description": "International tax comparison (Cyprus 15%, UAE 9%, Hong Kong 16.5%, Estonia 0%, Spain 25%, Portugal 21%, Malta 5%, Ireland 12.5%), DCF valuation, unit economics (LTV/CAC/MRR), P&L forecasting. Built by FinStudio — international tax consulting.",
+  "description": "Tax comparison, DCF valuation, unit economics, P&L forecast across 8 jurisdictions",
   "version": "1.0.0",
   "repository": {
     "url": "https://github.com/FinStudio-png/finstudio-mcp",
@@ -14,4 +14,3 @@
     }
   ]
 }
-
